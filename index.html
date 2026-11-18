@@ -1,0 +1,583 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0c0e0d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Contenção">
+<meta name="robots" content="noindex">
+<title>Protocolo Contenção</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: single-column phone-app "containment terminal", dark/committed. */
+:root{
+  color-scheme: dark;
+  --bg:#0c0e0d; --panel:#15181a; --panel2:#1b1f22; --line:#2d3338;
+  --fg:#e3e7ea; --muted:#878f96; --dim:#5c646b;
+  --amber:#e8b23a; --amber-d:#8a6a1f; --red:#d64a3f; --green:#58b86f;
+  --mono:'Space Mono',ui-monospace,Menlo,Consolas,monospace;
+  --sans:'Inter',system-ui,-apple-system,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  background:var(--bg); color:var(--fg); font-family:var(--sans);
+  margin:0; -webkit-font-smoothing:antialiased; overflow-x:hidden;
+}
+.wrap{
+  max-width:480px; margin:0 auto; min-height:100%;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:18px 40px;
+  display:flex; flex-direction:column; gap:16px;
+}
+/* top brand bar */
+.brand{display:flex;align-items:center;gap:11px;border-bottom:1px solid var(--line);padding-bottom:13px}
+.brand svg{width:40px;height:40px;flex:none}
+.brand .t1{font-family:var(--mono);font-weight:700;font-size:14px;letter-spacing:.5px;line-height:1.15}
+.brand .t2{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-top:2px}
+.mono{font-family:var(--mono)}
+.label{font-family:var(--mono);font-size:10.5px;letter-spacing:2px;text-transform:uppercase;color:var(--muted)}
+
+/* plantão window banner */
+.plantao{border:1px solid var(--line);border-radius:8px;padding:11px 13px;background:var(--panel);display:flex;gap:11px;align-items:center}
+.plantao .dot{width:9px;height:9px;border-radius:50%;background:var(--dim);flex:none;box-shadow:0 0 0 4px rgba(255,255,255,.03)}
+.plantao.on .dot{background:var(--green);box-shadow:0 0 10px 1px var(--green)}
+.plantao .pt{font-family:var(--mono);font-size:12px;letter-spacing:.5px}
+.plantao .ps{font-size:11.5px;color:var(--muted);margin-top:2px}
+
+/* status strip */
+.status{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 11px}
+.stat .v{font-family:var(--mono);font-weight:700;font-size:19px;color:var(--amber);font-variant-numeric:tabular-nums}
+.stat .k{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-top:3px}
+
+.cta{appearance:none;border:none;cursor:pointer;font-family:var(--mono);font-weight:700;
+  font-size:14px;letter-spacing:1.5px;text-transform:uppercase;color:#120d02;
+  background:var(--amber);border-radius:8px;padding:15px;width:100%;transition:filter .15s,transform .05s}
+.cta:hover{filter:brightness(1.07)} .cta:active{transform:translateY(1px)}
+.cta:disabled{background:var(--panel2);color:var(--dim);cursor:not-allowed}
+
+.sechead{display:flex;align-items:center;justify-content:space-between;margin-top:4px}
+
+/* occurrence list */
+.occ{display:flex;flex-direction:column;gap:9px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:12px;display:flex;gap:12px;align-items:center;text-align:left;width:100%;cursor:pointer;color:var(--fg);font-family:inherit;transition:border-color .15s,background .15s}
+.card:hover{border-color:var(--amber-d);background:var(--panel2)}
+.card.locked{cursor:not-allowed;opacity:.62}
+.card.locked:hover{border-color:var(--line);background:var(--panel)}
+.port{width:52px;height:52px;border-radius:7px;background:#0a0c0b;border:1px solid var(--line);flex:none;overflow:hidden}
+.port svg{width:100%;height:100%;display:block}
+.card .cid{font-family:var(--mono);font-size:11px;color:var(--amber);letter-spacing:.5px}
+.card .cname{font-weight:600;font-size:14.5px;margin-top:1px}
+.card .cmeta{font-size:11.5px;color:var(--muted);margin-top:3px;display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.chip{font-family:var(--mono);font-size:9.5px;letter-spacing:1px;text-transform:uppercase;padding:2px 6px;border-radius:4px;border:1px solid var(--line)}
+.chip.safe{color:var(--green);border-color:#2f5c3a}
+.chip.euclid{color:var(--amber);border-color:var(--amber-d)}
+.chip.keter{color:var(--red);border-color:#7a2a24}
+.chip.contida{color:#0c0e0d;background:var(--green);border-color:var(--green)}
+.redbar{display:inline-block;background:#000;color:transparent;border-radius:2px;padding:0 4px;user-select:none}
+
+/* nav */
+.nav{display:flex;gap:8px;border-top:1px solid var(--line);padding-top:13px;margin-top:4px}
+.nav button{flex:1;background:var(--panel);border:1px solid var(--line);color:var(--muted);font-family:var(--mono);
+  font-size:11px;letter-spacing:1px;text-transform:uppercase;padding:11px;border-radius:7px;cursor:pointer}
+.nav button.active{color:var(--amber);border-color:var(--amber-d);background:var(--panel2)}
+
+/* ---- TURNO ---- */
+.turno-top{display:flex;gap:12px;align-items:center}
+.turno-top .port{width:60px;height:60px}
+.bar{height:9px;background:var(--panel2);border:1px solid var(--line);border-radius:6px;overflow:hidden;margin-top:12px}
+.bar > i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--amber-d),var(--amber));transition:width .35s ease}
+.bar.contida > i{background:var(--green)}
+.barlabel{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-top:7px}
+
+.prompt{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:26px 16px;text-align:center;margin-top:16px}
+.prompt .q{font-family:var(--mono);font-weight:700;font-size:34px;letter-spacing:1px;line-height:1.1}
+.ans{font-family:var(--mono);font-weight:700;font-size:28px;color:var(--amber);min-height:38px;margin-top:14px;letter-spacing:2px;font-variant-numeric:tabular-nums}
+.ans.empty{color:var(--dim)}
+.feedback{font-family:var(--mono);font-size:12px;letter-spacing:1px;text-transform:uppercase;min-height:18px;margin-top:10px;text-align:center}
+.feedback.ok{color:var(--green)} .feedback.bad{color:var(--red)}
+.hint{font-size:12.5px;color:var(--amber);background:rgba(232,178,58,.08);border:1px solid var(--amber-d);border-radius:7px;padding:9px 11px;margin-top:12px;text-align:center}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-7px)}40%{transform:translateX(7px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+.shake{animation:shake .4s}
+
+.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:16px}
+.pad button{appearance:none;border:1px solid var(--line);background:var(--panel2);color:var(--fg);
+  font-family:var(--mono);font-weight:700;font-size:22px;padding:16px 0;border-radius:9px;cursor:pointer;transition:background .1s}
+.pad button:active{background:var(--line)}
+.pad .ok{background:var(--amber);color:#120d02;border-color:var(--amber)}
+.pad .del{color:var(--muted)}
+
+/* ---- containment / dossier ---- */
+.dossier{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;margin-top:14px}
+.dossier .dh{display:flex;gap:13px;align-items:center;border-bottom:1px solid var(--line);padding-bottom:13px;margin-bottom:13px}
+.dossier .dh .port{width:66px;height:66px}
+.drow{font-family:var(--mono);font-size:12.5px;line-height:1.6;margin:9px 0}
+.drow b{color:var(--amber);font-weight:700;display:block;font-size:10.5px;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:2px}
+.contbanner{text-align:center;font-family:var(--mono);font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--green);font-size:15px;padding:6px 0}
+
+/* collection grid */
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.gcard{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:11px;cursor:pointer;text-align:center}
+.gcard.locked{cursor:default;opacity:.5}
+.gcard .port{width:100%;height:84px;margin-bottom:8px}
+.gcard .cid{font-family:var(--mono);font-size:10.5px;color:var(--amber)}
+.gcard .cname{font-size:12.5px;font-weight:600;margin-top:2px;line-height:1.25}
+
+/* modal */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;padding:18px;z-index:40}
+.modal .inner{background:var(--panel);border:1px solid var(--amber-d);border-radius:12px;max-width:440px;width:100%;max-height:86%;overflow:auto;padding:18px}
+.closex{float:right;background:none;border:none;color:var(--muted);font-family:var(--mono);font-size:20px;cursor:pointer;line-height:1}
+.foot{font-family:var(--mono);font-size:9.5px;color:var(--dim);letter-spacing:1px;text-align:center;margin-top:8px}
+/* relatorio dos pais */
+.rtable{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:11.5px}
+.rtable th{color:var(--muted);font-weight:400;text-align:left;font-size:9.5px;letter-spacing:1px;text-transform:uppercase;padding:6px 4px;border-bottom:1px solid var(--line)}
+.rtable td{padding:7px 4px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+.rtable td.n,.rtable th.n{text-align:right}
+.rbox{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:13px;margin-top:12px;overflow-x:auto}
+.rempty{font-size:12.5px;color:var(--muted);padding:6px 0}
+.hazard{height:6px;border-radius:3px;background:repeating-linear-gradient(45deg,var(--amber) 0 10px,#0c0e0d 10px 20px);opacity:.75}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="brand">
+    <svg viewBox="0 0 100 100" aria-hidden="true">
+      <circle cx="50" cy="50" r="46" fill="none" stroke="#2d3338" stroke-width="3"/>
+      <circle cx="50" cy="50" r="9" fill="none" stroke="#e8b23a" stroke-width="3"/>
+      <g fill="#e8b23a">
+        <g transform="rotate(0 50 50)"><path d="M50 14 l9 15 h-18 z"/><rect x="47" y="26" width="6" height="16"/></g>
+        <g transform="rotate(120 50 50)"><path d="M50 14 l9 15 h-18 z"/><rect x="47" y="26" width="6" height="16"/></g>
+        <g transform="rotate(240 50 50)"><path d="M50 14 l9 15 h-18 z"/><rect x="47" y="26" width="6" height="16"/></g>
+      </g>
+    </svg>
+    <div>
+      <div class="t1">FUNDAÇÃO</div>
+      <div class="t2">Protocolo Contenção</div>
+    </div>
+  </div>
+
+  <!-- ========== TERMINAL ========== -->
+  <div id="scr-terminal">
+    <div class="plantao" id="plantaoBox">
+      <div class="dot"></div>
+      <div>
+        <div class="pt" id="plantaoT">JANELA DE PLANTÃO</div>
+        <div class="ps" id="plantaoS">Plantão recomendado às 14h00.</div>
+      </div>
+    </div>
+
+    <div class="status">
+      <div class="stat"><div class="v" id="stClear">1</div><div class="k">Clearance</div></div>
+      <div class="stat"><div class="v" id="stCont">0</div><div class="k">Contidas</div></div>
+      <div class="stat"><div class="v" id="stStreak">0</div><div class="k">Sequência</div></div>
+    </div>
+
+    <button class="cta" id="btnStart">Iniciar plantão</button>
+
+    <div class="sechead"><span class="label">Ocorrências ativas</span><span class="label" id="todayTag"></span></div>
+    <div class="occ" id="occList"></div>
+    <div class="hazard"></div>
+    <div class="foot">Acesso restrito · Uso interno de treinamento · Agente autorizado</div>
+  </div>
+
+  <!-- ========== TURNO ========== -->
+  <div id="scr-turno" hidden>
+    <div class="turno-top">
+      <div class="port" id="tPort"></div>
+      <div style="min-width:0">
+        <div class="cid mono" id="tId"></div>
+        <div class="cname" id="tName" style="font-weight:600;font-size:15px"></div>
+        <div class="cmeta"><span class="chip" id="tClass"></span><span class="mono" style="font-size:11px;color:var(--muted)">Contenção em andamento</span></div>
+      </div>
+    </div>
+    <div class="bar" id="tBar"><i></i></div>
+    <div class="barlabel"><span id="tBarL">Estabilidade</span><span id="tBarN">0 / 0</span></div>
+
+    <div class="prompt">
+      <div class="q mono" id="qText">—</div>
+      <div class="ans empty mono" id="ansText">_</div>
+    </div>
+    <div class="feedback mono" id="fb"></div>
+    <div class="hint" id="hint" hidden></div>
+
+    <div class="pad" id="pad"></div>
+    <button class="cta" id="btnAbort" style="margin-top:14px;background:var(--panel2);color:var(--muted)">Suspender plantão</button>
+  </div>
+
+  <!-- ========== CONTIDA ========== -->
+  <div id="scr-contida" hidden>
+    <div class="contbanner">◆ Anomalia contida ◆</div>
+    <div id="dossierBox"></div>
+    <button class="cta" id="btnBackContida" style="margin-top:16px">Voltar ao terminal</button>
+  </div>
+
+  <!-- ========== ARQUIVO ========== -->
+  <div id="scr-arquivo" hidden>
+    <div class="sechead"><span class="label">Arquivo de anomalias</span><span class="label" id="arqCount"></span></div>
+    <div class="grid" id="arqGrid"></div>
+    <div class="foot">Dossiês liberados conforme o nível de clearance.</div>
+  </div>
+
+  <!-- ========== RELATORIO (so pelo endereco #relatorio) ========== -->
+  <div id="scr-relatorio" hidden>
+    <div class="sechead"><span class="label">Relatório de supervisão</span></div>
+    <div class="status" id="rTop"></div>
+    <div id="rBody"></div>
+    <button class="cta" id="btnCopy" style="margin-top:16px">Copiar dados (JSON)</button>
+    <div class="foot" id="rCopyMsg">Dados salvos só neste aparelho.</div>
+  </div>
+
+  <!-- nav -->
+  <div class="nav" id="navBar">
+    <button id="navTerminal" class="active">Terminal</button>
+    <button id="navArquivo">Arquivo</button>
+  </div>
+</div>
+
+<div id="modalHost"></div>
+
+<script>
+"use strict";
+/* ---------------- Portraits (abstract, safe SVG sigils) ---------------- */
+const PORTS = {
+  "014":`<svg viewBox="0 0 100 100"><rect width="100" height="100" fill="#0a0c0b"/><circle cx="50" cy="50" r="30" fill="none" stroke="#e8b23a" stroke-width="2.5"/><path d="M50 50 L35 38" stroke="#e8b23a" stroke-width="3" fill="none"/><path d="M50 50 L62 58" stroke="#878f96" stroke-width="3" fill="none"/><path d="M68 32 l-6 2 2 -6" fill="none" stroke="#d64a3f" stroke-width="2.5"/><circle cx="50" cy="50" r="3" fill="#e8b23a"/></svg>`,
+  "023":`<svg viewBox="0 0 100 100"><rect width="100" height="100" fill="#0a0c0b"/><g fill="none" stroke="#e8b23a" stroke-width="2.5"><path d="M20 72 h16 v-12 h16 v-12 h16 v-12 h12"/></g><g fill="#878f96"><rect x="22" y="72" width="6" height="8"/><rect x="38" y="60" width="6" height="8"/><rect x="54" y="48" width="6" height="8"/></g></svg>`,
+  "031":`<svg viewBox="0 0 100 100"><rect width="100" height="100" fill="#0a0c0b"/><rect x="24" y="24" width="52" height="52" rx="4" fill="none" stroke="#878f96" stroke-width="2.5"/><circle cx="50" cy="50" r="15" fill="none" stroke="#e8b23a" stroke-width="2.5"/><text x="50" y="57" text-anchor="middle" fill="#e8b23a" font-family="monospace" font-size="18" font-weight="700">0</text><path d="M50 35 v-6 M65 50 h6" stroke="#878f96" stroke-width="2.5"/></svg>`,
+  "047":`<svg viewBox="0 0 100 100"><rect width="100" height="100" fill="#0a0c0b"/><g fill="#e8b23a"><circle cx="50" cy="70" r="5"/><circle cx="38" cy="54" r="4"/><circle cx="62" cy="54" r="4"/><circle cx="30" cy="38" r="3.3"/><circle cx="46" cy="38" r="3.3"/><circle cx="54" cy="38" r="3.3"/><circle cx="70" cy="38" r="3.3"/></g><g stroke="#878f96" stroke-width="2" fill="none"><path d="M50 65 L38 58 M50 65 L62 58 M38 50 L30 42 M38 50 L46 42 M62 50 L54 42 M62 50 L70 42"/></g></svg>`,
+  "058":`<svg viewBox="0 0 100 100"><rect width="100" height="100" fill="#0a0c0b"/><path d="M50 14 L44 40 L58 46 L40 62 L56 66 L46 88" fill="none" stroke="#e8b23a" stroke-width="3"/><path d="M50 14 L44 40 L58 46 L40 62 L56 66 L46 88" fill="none" stroke="#d64a3f" stroke-width="1" opacity=".6"/></svg>`,
+  "066":`<svg viewBox="0 0 100 100"><rect width="100" height="100" fill="#0a0c0b"/><g fill="#e8b23a" font-family="monospace" font-weight="700" font-size="15"><text x="24" y="34">7</text><text x="54" y="28">3</text><text x="70" y="44">9</text><text x="30" y="56">4</text><text x="48" y="60">1</text><text x="66" y="68">5</text><text x="26" y="78">8</text><text x="52" y="82">2</text></g></svg>`,
+  "077":`<svg viewBox="0 0 100 100"><rect width="100" height="100" fill="#0a0c0b"/><g fill="none" stroke="#878f96" stroke-width="2"><rect x="22" y="26" width="56" height="10"/><rect x="22" y="44" width="56" height="10"/><rect x="22" y="62" width="56" height="10"/></g><path d="M34 68 C28 60 40 58 42 66 C44 74 56 72 50 64" fill="none" stroke="#e8b23a" stroke-width="2.5"/><text x="64" y="20" fill="#e8b23a" font-family="monospace" font-size="15" font-weight="700">∞</text></svg>`
+};
+function port(id){ return PORTS[id] || `<svg viewBox="0 0 100 100"><rect width="100" height="100" fill="#0a0c0b"/></svg>`; }
+function silhouette(){ return `<svg viewBox="0 0 100 100"><rect width="100" height="100" fill="#0a0c0b"/><text x="50" y="46" text-anchor="middle" fill="#2d3338" font-family="monospace" font-size="30" font-weight="700">?</text><rect x="20" y="58" width="60" height="9" fill="#000"/></svg>`; }
+
+/* ---------------- Anomalies ---------------- */
+const ANOMALIAS = [
+  {id:"014",nome:"O Relógio Reverso",cls:"Safe",req:1,n:4,skills:["add_e","sub_e"],
+   proc:"Manter o Item em uma sala sem outros relógios. A contagem temporal deve ser reestabilizada por um agente a cada turno, resolvendo os registros de horário.",
+   desc:"SCP-014 é um relógio de parede cujos ponteiros giram para trás. Objetos deixados perto dele parecem \"lembrar\" como estavam alguns minutos antes. Nenhum dano permanente foi [DADOS EXPURGADOS].",
+   lore:"Com a contagem estável, os ponteiros voltaram ao ritmo normal. O relógio agora marca a hora certa, por enquanto."},
+  {id:"023",nome:"A Escada Dobrável",cls:"Safe",req:1,n:4,skills:["mul2","mul5","double"],
+   proc:"Cada degrau mede o dobro do anterior. A contenção exige recalcular as medidas dos degraus para que a escada não dobre sobre si mesma.",
+   desc:"SCP-023 é uma escada de concreto que se dobra sozinha. Quem sobe nunca chega ao topo, pois a escada cresce em progressão. Testes com [DADOS EXPURGADOS] foram suspensos.",
+   lore:"As medidas bateram. A escada travou em quinze degraus e parou de crescer."},
+  {id:"031",nome:"O Cofre de Zero",cls:"Safe",req:1,n:5,skills:["sub_e","comp10","div_e"],
+   proc:"O cofre só se tranca quando o visor chega a zero. O agente precisa completar cada conta que aparece no mostrador para fechar a porta.",
+   desc:"SCP-031 é um cofre de aço cujo visor exibe contas incompletas. Enquanto houver conta em aberto, a porta permanece [DADOS EXPURGADOS] e emite um zumbido baixo.",
+   lore:"Visor zerado. A porta se fechou com um estalo seco e o zumbido cessou."},
+  {id:"047",nome:"O Coral dos Múltiplos",cls:"Euclid",req:2,n:5,skills:["mulFull","mul10"],
+   proc:"A colônia se multiplica a cada contato. A contenção depende de prever quantas novas ramificações surgem, multiplicando os grupos corretamente.",
+   desc:"SCP-047 é uma colônia que se reproduz em múltiplos exatos. Um toque gera vários novos ramos. Fora de contenção, dobra de tamanho em [DADOS EXPURGADOS] horas.",
+   lore:"A previsão dos múltiplos permitiu isolar a colônia antes que ela se espalhasse. Ramificação contida."},
+  {id:"058",nome:"A Fenda Subtrativa",cls:"Euclid",req:2,n:5,skills:["subRegroup","comp100"],
+   proc:"Tudo que atravessa a fenda perde parte de si. É preciso calcular quanto sobra de cada objeto para mapear e selar a abertura.",
+   desc:"SCP-058 é uma fenda no ar que subtrai massa do que passa por ela. Objetos saem menores do que entraram. A diferença nunca é [DADOS EXPURGADOS].",
+   lore:"Com os restos todos calculados, a fenda foi mapeada e selada com uma placa de contenção."},
+  {id:"066",nome:"O Enxame de Algarismos",cls:"Euclid",req:2,n:5,skills:["divFull","half"],
+   proc:"Os algarismos voam em bando e só pousam quando divididos em grupos iguais. O agente deve dividir o enxame corretamente para acomodá-lo.",
+   desc:"SCP-066 é um enxame de dígitos luminosos que se recusa a pousar em grupos desiguais. Enquanto não é dividido, zumbe e [DADOS EXPURGADOS] as luzes da sala.",
+   lore:"Divididos em grupos iguais, os algarismos pousaram em silêncio dentro da urna de contenção."},
+  {id:"077",nome:"O Arquivo Infinito",cls:"Keter",req:3,n:6,skills:["missing","sequence","twostep"],
+   proc:"As fichas do arquivo seguem um padrão oculto. Descobrir o número que falta em cada sequência impede que o arquivo gere novas fichas sem fim.",
+   desc:"SCP-077 é um arquivo que cria fichas sozinho, cada uma seguindo o padrão da anterior. Se o padrão é quebrado, o arquivo [DADOS EXPURGADOS] até preencher a sala.",
+   lore:"Cada lacuna preenchida travou uma gaveta. Com o padrão completo, o arquivo parou de crescer. Contenção máxima atingida."}
+];
+const byId = id => ANOMALIAS.find(a=>a.id===id);
+
+/* ---------------- State / storage ---------------- */
+const SKEY="scp_davi_v1";
+let S = {contidos:[], facts:{}, nextSeen:1, lastDate:null, streak:0, best:0, log:[]};
+function load(){ try{const r=localStorage.getItem(SKEY); if(r) S=Object.assign(S,JSON.parse(r));}catch(e){} if(!Array.isArray(S.log)) S.log=[]; }
+function save(){ try{localStorage.setItem(SKEY,JSON.stringify(S));}catch(e){} }
+load();
+
+function clearanceOf(n){ if(n>=7)return 5; if(n>=6)return 4; if(n>=4)return 3; if(n>=2)return 2; return 1; }
+function clearance(){ return clearanceOf(S.contidos.length); }
+function unlocked(a){ const lvl=clearance(); return a.req<=lvl; }
+function isContida(id){ return S.contidos.includes(id); }
+function todayStr(){ const d=new Date(); return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate(); }
+function yestStr(){ const d=new Date(Date.now()-864e5); return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate(); }
+
+/* ---------------- Math generators ---------------- */
+const R=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+function make(skill){
+  let a,b,q,d,prompt,answer,hint="",key;
+  switch(skill){
+    case "add_e": a=R(2,9); b=R(2,9); prompt=`${a} + ${b}`; answer=a+b; hint=`Comece do ${Math.max(a,b)} e conte mais ${Math.min(a,b)}.`; break;
+    case "sub_e": a=R(8,18); b=R(2,Math.min(7,a-1)); prompt=`${a} − ${b}`; answer=a-b; hint=`Do ${a}, volte ${b}.`; break;
+    case "comp10": a=R(2,9); prompt=`${a} + □ = 10`; answer=10-a; hint=`Quanto falta do ${a} para 10?`; break;
+    case "comp100": a=R(11,89); while(a%10===0)a=R(11,89); prompt=`${a} + □ = 100`; answer=100-a; hint=`Complete as unidades até a próxima dezena e depois até 100.`; break;
+    case "mul2": b=R(2,10); prompt=`2 × ${b}`; answer=2*b; hint=`2 × ${b} é o dobro de ${b}.`; break;
+    case "mul5": b=R(2,10); prompt=`5 × ${b}`; answer=5*b; hint=`5 × ${b}: pense em ${b} notas de 5.`; break;
+    case "mul10": b=R(2,10); prompt=`10 × ${b}`; answer=10*b; hint=`10 × ${b} é só pôr um zero: ${b}0.`; break;
+    case "mulFull": a=R(3,9); b=R(3,9); prompt=`${a} × ${b}`; answer=a*b; hint=(a===9||b===9)?`Faça 10 × ${a===9?b:a} e tire ${a===9?b:a}.`:`Pense no 5 × ${b} e vá ajustando.`; break;
+    case "double": a=R(6,24); prompt=`Dobro de ${a}`; answer=2*a; hint=`Dobro é ${a} + ${a}.`; break;
+    case "half": q=R(4,25); a=2*q; prompt=`Metade de ${a}`; answer=q; hint=`Metade: divida ${a} em duas partes iguais.`; break;
+    case "div_e": d=[2,5,10][R(0,2)]; q=R(2,10); a=d*q; prompt=`${a} ÷ ${d}`; answer=q; hint=`${a} ÷ ${d}: quantos ${d} cabem em ${a}?`; break;
+    case "divFull": d=R(3,9); q=R(3,9); a=d*q; prompt=`${a} ÷ ${d}`; answer=q; hint=`Pense na tabuada do ${d}: ${d} × □ = ${a}.`; break;
+    case "subRegroup": a=R(32,98); b=R(13,a-5); if((a%10)>=(b%10)){ b=b-(b%10)+((a%10)+R(1,3)); if(b>=a)b=a-R(3,9);} prompt=`${a} − ${b}`; answer=a-b; hint=`Separe dezenas e unidades e troque uma dezena se precisar.`; break;
+    case "missing": if(Math.random()<.5){ a=R(2,9); b=R(5,15); prompt=`□ + ${a} = ${a+b}`; answer=b; hint=`Quanto falta do ${a} para ${a+b}?`; } else { a=R(2,9); q=R(2,9); prompt=`${a} × □ = ${a*q}`; answer=q; hint=`${a} vezes quanto dá ${a*q}?`; } break;
+    case "sequence": if(Math.random()<.5){ a=R(2,5); d=R(2,5); prompt=`${a}, ${a+d}, ${a+2*d}, ${a+3*d}, □`; answer=a+4*d; hint=`Some ${d} a cada passo.`; } else { a=R(2,4); prompt=`${a}, ${a*2}, ${a*4}, ${a*8}, □`; answer=a*16; hint=`Cada número é o dobro do anterior.`; } break;
+    case "twostep": a=R(2,6); b=R(2,6); q=R(2,9); prompt=`${a} × ${b} + ${q}`; answer=a*b+q; hint=`Primeiro ${a} × ${b}, depois some ${q}.`; break;
+    default: a=R(2,9); b=R(2,9); prompt=`${a} + ${b}`; answer=a+b;
+  }
+  key=skill+":"+prompt;
+  return {key,skill,prompt,answer,hint};
+}
+// pick next challenge for a skill pool, biased toward weak/overdue stored facts (Leitner)
+function pick(pool){
+  if(Math.random()<0.5){
+    const weak=Object.values(S.facts).filter(f=>pool.includes(f.skill)&&f.box<=2);
+    if(weak.length){ weak.sort((x,y)=>x.seen-y.seen); const f=weak[0]; return {key:f.key,skill:f.skill,prompt:f.prompt,answer:f.answer,hint:f.hint}; }
+  }
+  return make(pool[R(0,pool.length-1)]);
+}
+function recordAnswer(c,correct,info){
+  let f=S.facts[c.key];
+  if(!f){ f={key:c.key,skill:c.skill,prompt:c.prompt,answer:c.answer,hint:c.hint,box:1,seen:0}; S.facts[c.key]=f; }
+  f.box = correct ? Math.min(5,f.box+1) : 1;
+  f.seen = S.nextSeen++;
+  if(info){
+    // tempo de resposta: medido sem aparecer na tela (nao pressiona o agente)
+    const ms=info.ms;
+    S.log.push({t:new Date().toISOString(),dia:todayStr(),anomalia:info.anomalia,skill:c.skill,conta:c.prompt,
+      resposta:info.resposta,certo:correct?1:0,tentativa:info.tentativa,ms:ms});
+    if(S.log.length>LOG_MAX) S.log=S.log.slice(-LOG_MAX);
+    f.tUltimo=ms;
+    if(ms<=PAUSA_MS){ f.nTempo=(f.nTempo||0)+1; f.tMedio=Math.round(((f.tMedio||0)*(f.nTempo-1)+ms)/f.nTempo); }
+  }
+  save();
+}
+/* ---------------- Tempo de resposta (invisivel) ---------------- */
+const LOG_MAX=8000, PAUSA_MS=120000; // acima de 2 min conta como pausa: fica no log, fora das medias
+let clk={start:0,hiddenAt:0,hidden:0};
+function clkStart(){ clk={start:performance.now(),hiddenAt:document.hidden?performance.now():0,hidden:0}; }
+function clkRead(){ const now=performance.now(); let h=clk.hidden; if(clk.hiddenAt) h+=now-clk.hiddenAt; return Math.max(0,Math.round(now-clk.start-h)); }
+document.addEventListener("visibilitychange",()=>{
+  if(!clk.start) return;
+  if(document.hidden){ clk.hiddenAt=performance.now(); }
+  else if(clk.hiddenAt){ clk.hidden+=performance.now()-clk.hiddenAt; clk.hiddenAt=0; }
+});
+
+/* ---------------- Screens ---------------- */
+const scr={terminal:el("scr-terminal"),turno:el("scr-turno"),contida:el("scr-contida"),arquivo:el("scr-arquivo"),relatorio:el("scr-relatorio")};
+function el(id){return document.getElementById(id);}
+function show(name){ for(const k in scr) scr[k].hidden=(k!==name); el("navTerminal").classList.toggle("active",name==="terminal"); el("navArquivo").classList.toggle("active",name==="arquivo"); el("navBar").hidden=(name==="relatorio"); window.scrollTo(0,0); }
+
+function renderTerminal(){
+  el("stClear").textContent = clearance()===5?"O5":clearance();
+  el("stCont").textContent = S.contidos.length;
+  el("stStreak").textContent = S.streak;
+  // plantão window
+  const h=new Date().getHours(), m=new Date().getMinutes(), mins=h*60+m;
+  const on = mins>=14*60 && mins<15*60+30;
+  const box=el("plantaoBox");
+  box.classList.toggle("on",on);
+  el("plantaoT").textContent = on?"JANELA DE PLANTÃO ATIVA":"JANELA DE PLANTÃO";
+  el("plantaoS").textContent = on?"Horário ideal para o plantão de hoje. Bom trabalho, agente.":"Plantão recomendado das 14h00 às 15h30.";
+  el("todayTag").textContent = (S.lastDate===todayStr())?"PLANTÃO DE HOJE ✓":"";
+  // occurrences
+  const avail = ANOMALIAS.filter(a=>!isContida(a.id));
+  const list=el("occList"); list.innerHTML="";
+  avail.forEach(a=>{
+    const lock=!unlocked(a);
+    const b=document.createElement("button");
+    b.className="card"+(lock?" locked":"");
+    b.innerHTML = lock
+      ? `<div class="port">${silhouette()}</div><div style="min-width:0"><div class="cid">SCP-███</div><div class="cname"><span class="redbar">ANOMALIA CLASSIFICADA</span></div><div class="cmeta">Requer clearance nível ${a.req}</div></div>`
+      : `<div class="port">${port(a.id)}</div><div style="min-width:0"><div class="cid">SCP-${a.id}</div><div class="cname">${a.nome}</div><div class="cmeta"><span class="chip ${a.cls.toLowerCase()}">${a.cls}</span><span>${a.n} procedimentos</span></div></div>`;
+    if(!lock) b.onclick=()=>startTurno(a.id);
+    list.appendChild(b);
+  });
+  if(!avail.length){ list.innerHTML=`<div class="card" style="cursor:default"><div style="font-size:13px;color:var(--muted)">Todas as anomalias conhecidas foram contidas. Novos registros serão liberados em breve, agente.</div></div>`; }
+  const nextA = avail.find(a=>unlocked(a));
+  el("btnStart").disabled=!nextA;
+  el("btnStart").textContent = nextA?"Iniciar plantão":"Sem ocorrências liberadas";
+  el("btnStart").onclick = ()=> nextA && startTurno(nextA.id);
+}
+
+/* ---------------- Turno ---------------- */
+let T=null;
+function startTurno(id){
+  const a=byId(id);
+  const ch=[]; for(let i=0;i<a.n;i++) ch.push(pick(a.skills));
+  T={a,ch,idx:0,wrong:0,buf:""};
+  el("tPort").innerHTML=port(a.id);
+  el("tId").textContent="SCP-"+a.id;
+  el("tName").textContent=a.nome;
+  const cc=el("tClass"); cc.textContent=a.cls; cc.className="chip "+a.cls.toLowerCase();
+  renderPad(); renderChallenge(); show("turno");
+}
+function renderChallenge(){
+  const c=T.ch[T.idx];
+  el("qText").textContent=c.prompt.replace("=","=");
+  T.buf=""; updAns();
+  el("fb").textContent=""; el("fb").className="feedback mono";
+  el("hint").hidden=true;
+  const pct=Math.round(T.idx/T.a.n*100);
+  el("tBar").querySelector("i").style.width=pct+"%";
+  el("tBar").classList.remove("contida");
+  el("tBarN").textContent=`${T.idx} / ${T.a.n}`;
+  el("tBarL").textContent="Estabilidade";
+  T.tries=0; clkStart();
+}
+function updAns(){ const e=el("ansText"); e.textContent=T.buf===""?"_":T.buf; e.classList.toggle("empty",T.buf===""); }
+function renderPad(){
+  const pad=el("pad"); pad.innerHTML="";
+  ["1","2","3","4","5","6","7","8","9","⌫","0","OK"].forEach(k=>{
+    const b=document.createElement("button");
+    b.textContent=k;
+    if(k==="OK")b.className="ok"; if(k==="⌫")b.className="del";
+    b.onclick=()=>key(k);
+    pad.appendChild(b);
+  });
+}
+function key(k){
+  if(k==="⌫"){ T.buf=T.buf.slice(0,-1); updAns(); return; }
+  if(k==="OK"){ submit(); return; }
+  if(T.buf.length<4){ T.buf+=k; updAns(); }
+}
+function submit(){
+  if(T.buf==="")return;
+  const c=T.ch[T.idx];
+  const val=parseInt(T.buf,10);
+  const fb=el("fb");
+  T.tries=(T.tries||0)+1;
+  const info={ms:clkRead(),resposta:val,tentativa:T.tries,anomalia:T.a.id};
+  clkStart(); // proxima tentativa conta a partir daqui
+  if(val===c.answer){
+    recordAnswer(c,true,info);
+    fb.textContent="ESTÁVEL ✓"; fb.className="feedback mono ok";
+    T.idx++; T.wrong=0;
+    const pct=Math.round(T.idx/T.a.n*100);
+    el("tBar").querySelector("i").style.width=pct+"%";
+    el("tBarN").textContent=`${T.idx} / ${T.a.n}`;
+    if(T.idx>=T.a.n){ setTimeout(contain,520); }
+    else setTimeout(renderChallenge,520);
+  } else {
+    recordAnswer(c,false,info);
+    T.wrong++;
+    fb.textContent="CONTENÇÃO INSTÁVEL — RECALIBRAR"; fb.className="feedback mono bad";
+    const p=scr.turno.querySelector(".prompt"); p.classList.remove("shake"); void p.offsetWidth; p.classList.add("shake");
+    T.buf=""; updAns();
+    if(T.wrong>=2 && c.hint){ el("hint").textContent="Dica da Fundação: "+c.hint; el("hint").hidden=false; }
+  }
+}
+function contain(){
+  const a=T.a;
+  el("tBar").classList.add("contida"); el("tBar").querySelector("i").style.width="100%";
+  if(!isContida(a.id)) S.contidos.push(a.id);
+  // daily + streak
+  const t=todayStr();
+  if(S.lastDate!==t){ S.streak = (S.lastDate===yestStr())? S.streak+1 : 1; S.lastDate=t; if(S.streak>S.best)S.best=S.streak; }
+  save();
+  renderDossier(a,true); show("contida");
+}
+el("btnAbort").onclick=()=>{ renderTerminal(); show("terminal"); };
+el("btnBackContida").onclick=()=>{ renderTerminal(); show("terminal"); };
+
+/* ---------------- Dossier ---------------- */
+function dossierHTML(a){
+  return `<div class="dossier">
+    <div class="dh"><div class="port">${port(a.id)}</div>
+      <div style="min-width:0"><div class="cid mono">SCP-${a.id}</div>
+      <div style="font-weight:600;font-size:15px">${a.nome}</div>
+      <div style="margin-top:4px"><span class="chip ${a.cls.toLowerCase()}">Classe ${a.cls}</span></div></div>
+    </div>
+    <div class="drow"><b>Procedimentos de contenção</b>${a.proc}</div>
+    <div class="drow"><b>Descrição</b>${a.desc}</div>
+    <div class="drow"><b>Adendo · contenção bem-sucedida</b>${a.lore}</div>
+  </div>`;
+}
+function renderDossier(a){ el("dossierBox").innerHTML=dossierHTML(a); }
+
+/* ---------------- Arquivo ---------------- */
+function renderArquivo(){
+  el("arqCount").textContent=`${S.contidos.length} / ${ANOMALIAS.length}`;
+  const g=el("arqGrid"); g.innerHTML="";
+  ANOMALIAS.forEach(a=>{
+    const done=isContida(a.id);
+    const c=document.createElement("div");
+    c.className="gcard"+(done?"":" locked");
+    c.innerHTML = done
+      ? `<div class="port">${port(a.id)}</div><div class="cid">SCP-${a.id}</div><div class="cname">${a.nome}</div><div style="margin-top:5px"><span class="chip ${a.cls.toLowerCase()}">${a.cls}</span></div>`
+      : `<div class="port">${silhouette()}</div><div class="cid">SCP-${a.id}</div><div class="cname"><span class="redbar">CLASSIFICADO</span></div><div style="margin-top:5px"><span class="chip">Nível ${a.req}</span></div>`;
+    if(done) c.onclick=()=>openModal(a);
+    g.appendChild(c);
+  });
+}
+function openModal(a){
+  const host=el("modalHost");
+  host.innerHTML=`<div class="modal"><div class="inner"><button class="closex" id="mx">×</button>${dossierHTML(a)}</div></div>`;
+  el("mx").onclick=()=>host.innerHTML="";
+  host.querySelector(".modal").onclick=(e)=>{ if(e.target.classList.contains("modal")) host.innerHTML=""; };
+}
+
+/* ---------------- Nav ---------------- */
+el("navTerminal").onclick=()=>{ renderTerminal(); show("terminal"); };
+el("navArquivo").onclick=()=>{ renderArquivo(); show("arquivo"); };
+
+/* ---------------- Relatorio dos pais (#relatorio) ---------------- */
+const SKILL_NOME={add_e:"Adição simples",sub_e:"Subtração simples",comp10:"Completar 10",comp100:"Completar 100",
+  mul2:"Tabuada do 2",mul5:"Tabuada do 5",mul10:"Tabuada do 10",mulFull:"Tabuada completa",double:"Dobro",half:"Metade",
+  div_e:"Divisão simples",divFull:"Divisão completa",subRegroup:"Subtração com empréstimo",missing:"Número que falta",
+  sequence:"Sequência",twostep:"Conta em duas etapas"};
+const ESC_MAP={"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"};
+const esc=s=>String(s).replace(/[&<>"]/g,ch=>ESC_MAP[ch]);
+const seg=ms=>ms==null?"-":(ms/1000).toFixed(1).replace(".",",")+" s";
+const pct=(a,b)=>b?Math.round(a/b*100)+"%":"-";
+function agrupa(keyFn){
+  const m={};
+  S.log.forEach(r=>{ const k=keyFn(r); const g=m[k]||(m[k]={k,skill:r.skill,conta:r.conta,n:0,ok:0,err:0,tSum:0,tN:0});
+    g.n++; if(r.certo) g.ok++; else g.err++; if(r.ms<=PAUSA_MS){ g.tSum+=r.ms; g.tN++; } });
+  return Object.values(m).map(g=>Object.assign(g,{tMed:g.tN?Math.round(g.tSum/g.tN):null}));
+}
+function renderRelatorio(){
+  const L=S.log, dias=[...new Set(L.map(r=>r.dia))];
+  const ok=L.filter(r=>r.certo).length, tv=L.filter(r=>r.ms<=PAUSA_MS);
+  const tMed=tv.length?Math.round(tv.reduce((s,r)=>s+r.ms,0)/tv.length):null;
+  el("rTop").innerHTML=`<div class="stat"><div class="v">${dias.length}</div><div class="k">Dias jogados</div></div>
+    <div class="stat"><div class="v">${pct(ok,L.length)}</div><div class="k">Acerto (${L.length})</div></div>
+    <div class="stat"><div class="v">${seg(tMed)}</div><div class="k">Tempo médio</div></div>`;
+  if(!L.length){ el("rBody").innerHTML=`<div class="rbox"><div class="rempty">Ainda não há respostas registradas neste aparelho. Os dados aparecem assim que o agente fizer o primeiro plantão.</div></div>`; return; }
+  const porSkill=agrupa(r=>r.skill).sort((a,b)=>b.n-a.n);
+  const porConta=agrupa(r=>r.skill+":"+r.conta);
+  const maisErradas=porConta.filter(g=>g.err>0).sort((a,b)=>b.err-a.err||b.n-a.n).slice(0,10);
+  const maisLentas=porConta.filter(g=>g.tMed!=null).sort((a,b)=>b.tMed-a.tMed).slice(0,10);
+  const contaTd=g=>`<td>${esc(g.conta)}<div style="color:var(--dim);font-size:9.5px">${esc(SKILL_NOME[g.skill]||g.skill)}</div></td>`;
+  const ultimo=L[L.length-1];
+  el("rBody").innerHTML=`
+  <div class="rbox"><div class="label" style="margin-bottom:6px">Por tipo de conta</div>
+    <table class="rtable"><tr><th>Tipo</th><th class="n">Tent.</th><th class="n">Acerto</th><th class="n">Tempo</th></tr>
+    ${porSkill.map(g=>`<tr><td>${esc(SKILL_NOME[g.skill]||g.skill)}</td><td class="n">${g.n}</td><td class="n">${pct(g.ok,g.n)}</td><td class="n">${seg(g.tMed)}</td></tr>`).join("")}</table></div>
+  <div class="rbox"><div class="label" style="margin-bottom:6px">10 contas mais erradas</div>
+    ${maisErradas.length?`<table class="rtable"><tr><th>Conta</th><th class="n">Erros</th><th class="n">Tent.</th><th class="n">Tempo</th></tr>
+    ${maisErradas.map(g=>`<tr>${contaTd(g)}<td class="n">${g.err}</td><td class="n">${g.n}</td><td class="n">${seg(g.tMed)}</td></tr>`).join("")}</table>`:`<div class="rempty">Nenhum erro até agora.</div>`}</div>
+  <div class="rbox"><div class="label" style="margin-bottom:6px">10 contas mais lentas</div>
+    <table class="rtable"><tr><th>Conta</th><th class="n">Tempo</th><th class="n">Tent.</th><th class="n">Acerto</th></tr>
+    ${maisLentas.map(g=>`<tr>${contaTd(g)}<td class="n">${seg(g.tMed)}</td><td class="n">${g.n}</td><td class="n">${pct(g.ok,g.n)}</td></tr>`).join("")}</table></div>
+  <div class="foot">Tempo = da conta aparecer até apertar OK. Respostas acima de 2 min contam como pausa e ficam fora das médias. Última resposta: ${esc(new Date(ultimo.t).toLocaleString("pt-BR"))}.</div>`;
+}
+el("btnCopy").onclick=()=>{
+  const txt=JSON.stringify({exportado:new Date().toISOString(),contidos:S.contidos,streak:S.streak,best:S.best,lastDate:S.lastDate,respostas:S.log,facts:S.facts},null,1);
+  const done=()=>{ el("rCopyMsg").textContent="Dados copiados. É só colar numa mensagem."; };
+  const fallback=()=>{ const ta=document.createElement("textarea"); ta.value=txt; document.body.appendChild(ta); ta.select(); try{document.execCommand("copy");done();}catch(e){el("rCopyMsg").textContent="Não deu pra copiar neste navegador.";} ta.remove(); };
+  if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done,fallback); else fallback();
+};
+
+/* ---------------- Boot ---------------- */
+function route(){ if(location.hash==="#relatorio"){ renderRelatorio(); show("relatorio"); return true; } return false; }
+window.addEventListener("hashchange",()=>{ if(!route()){ renderTerminal(); show("terminal"); } });
+function start(){ if(route()) return; renderTerminal(); show("terminal"); }
+if(window.claude&&window.claude.hot&&window.claude.hot.ready) window.claude.hot.ready(start); else start();
+</script>
+</body>
+</html>
